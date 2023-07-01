@@ -1,18 +1,48 @@
 package api
 
 import (
+	"github.com/dayoneabu/hotel_reservation/db"
 	"github.com/dayoneabu/hotel_reservation/types"
 	"github.com/gofiber/fiber/v2"
 )
 
-func HandelGetUsers(c *fiber.Ctx) error {
-	return c.JSON(map[string]string{"msg": "john doe"})
+type UserHandler struct {
+	userStore db.UserStore
 }
-func HandelGetUser(c *fiber.Ctx) error {
-	james := types.User{
-		ID:        "id001",
-		FirstName: "john",
-		LastName:  "doe",
+
+func NewUserHandler(userStore db.UserStore) *UserHandler {
+	return &UserHandler{
+		userStore: userStore,
 	}
-	return c.JSON(map[string]types.User{"msg": james})
+}
+
+func (h *UserHandler) HandelGetUser(c *fiber.Ctx) error {
+	user, err := h.userStore.GetUserByID(c.Context(), c.Params("id"))
+	if err != nil {
+		return err
+	}
+	return c.JSON(map[string]*types.User{"msg": user})
+}
+
+func (h *UserHandler) HandelGetUsers(c *fiber.Ctx) error {
+	users, err := h.userStore.GetAllUsers(c.Context())
+	if err != nil {
+		return err
+	}
+	return c.JSON(map[string][]*types.User{"msg": users})
+}
+func (h *UserHandler) HandelPostUser(c *fiber.Ctx) error {
+	// users, err := h.userStore.GetAllUsers(c.Context())
+	// if err != nil {
+	// 	return err
+	// }
+	firstName := c.Params("firstName")
+	lastName := c.Params("lastName")
+	var user = types.User{
+		FirstName: firstName,
+		LastName:  lastName,
+	}
+	h.userStore.CreateNewUser(c.Context(), &user)
+
+	return nil
 }
