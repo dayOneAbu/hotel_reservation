@@ -31,18 +31,23 @@ func (h *UserHandler) HandelGetUsers(c *fiber.Ctx) error {
 	}
 	return c.JSON(map[string][]*types.User{"msg": users})
 }
-func (h *UserHandler) HandelPostUser(c *fiber.Ctx) error {
-	// users, err := h.userStore.GetAllUsers(c.Context())
-	// if err != nil {
-	// 	return err
-	// }
-	firstName := c.Params("firstName")
-	lastName := c.Params("lastName")
-	var user = types.User{
-		FirstName: firstName,
-		LastName:  lastName,
-	}
-	h.userStore.CreateNewUser(c.Context(), &user)
 
-	return nil
+func (h *UserHandler) HandelPostUser(c *fiber.Ctx) error {
+	var params types.CreateUserParams
+	if err := c.BodyParser(&params); err != nil {
+		return err
+	}
+	if errors := params.Validate(); len(errors) > 0 {
+		return c.JSON(errors)
+	}
+	user, err := types.NewUserFromParams(params)
+	if err != nil {
+		return err
+	}
+
+	user, e := h.userStore.CreateNewUser(c.Context(), user)
+	if e != nil {
+		return e
+	}
+	return c.JSON(user)
 }

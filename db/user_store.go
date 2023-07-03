@@ -58,5 +58,10 @@ func (s *MongoUserStore) GetAllUsers(ctx context.Context) ([]*types.User, error)
 	return users, nil
 }
 func (s *MongoUserStore) CreateNewUser(ctx context.Context, user *types.User) (*types.User, error) {
-	return nil, nil
+	res, err := s.coll.InsertOne(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+	user.ID = res.InsertedID.(primitive.ObjectID)
+	return user, nil
 }
