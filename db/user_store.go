@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 const (
@@ -18,6 +19,8 @@ type UserStore interface {
 	GetUserByID(context.Context, string) (*types.User, error)
 	GetAllUsers(context.Context) ([]*types.User, error)
 	CreateNewUser(context.Context, *types.User) (*types.User, error)
+	UpdateUser(ctx context.Context, id bson.M, user bson.M) (bool, error)
+	DeleteUser(context.Context, string) error
 }
 
 type MongoUserStore struct {
@@ -57,6 +60,7 @@ func (s *MongoUserStore) GetAllUsers(ctx context.Context) ([]*types.User, error)
 
 	return users, nil
 }
+
 func (s *MongoUserStore) CreateNewUser(ctx context.Context, user *types.User) (*types.User, error) {
 	res, err := s.coll.InsertOne(ctx, user)
 	if err != nil {
@@ -64,4 +68,30 @@ func (s *MongoUserStore) CreateNewUser(ctx context.Context, user *types.User) (*
 	}
 	user.ID = res.InsertedID.(primitive.ObjectID)
 	return user, nil
+}
+
+func (s *MongoUserStore) DeleteUser(ctx context.Context, id string) error {
+	oid, oidErr := primitive.ObjectIDFromHex(id)
+	if oidErr != nil {
+		return oidErr
+	}
+	_, err := s.coll.DeleteOne(ctx, bson.M{"_id": oid})
+	// TODO: implement some sort of verification
+	// fmt.Println(res.DeletedCount != 0)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *MongoUserStore) UpdateUser(ctx context.Context, id bson.M, user bson.M) (bool, error) {
+	opts := options.Update().SetUpsert(false)
+	updatedUser, err := s.coll.UpdateOne(ctx, id, user, opts)
+	if err != nil {
+		return false, err
+	}
+	if updatedUser.ModifiedCount != 0 {
+		return true, nil
+	}
+	return false, err
 }
