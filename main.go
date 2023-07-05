@@ -23,12 +23,21 @@ func main() {
 	apiV1 := app.Group("/api/v1")
 
 	userHandler := api.NewUserHandler(db.NewMongoUserStore(client))
+	hotelHandler := api.NewHotelHandler(db.NewMongoHotelStore(client))
 	app.Get("/", handleHome)
+	// userHandlers
 	apiV1.Get("/users", userHandler.HandelGetUsers)
 	apiV1.Get("/users/:id", userHandler.HandelGetUser)
 	apiV1.Post("/users/", userHandler.HandelPostUser)
 	apiV1.Put("/users/:id", userHandler.HandlePutUser)
 	apiV1.Delete("/users/:id", userHandler.HandleDeleteUser)
+	// hotelHandlers
+	apiV1.Get("/hotel", hotelHandler.HandelGetAllHotel)
+	apiV1.Get("/hotel/:id", hotelHandler.HandleGetHotelByID)
+	apiV1.Post("/hotel", hotelHandler.HandelPostHotel)
+	apiV1.Put("/hotel/:id", hotelHandler.HandleUpdateHotel)
+	apiV1.Delete("/hotel/:hotelId/:roomId", hotelHandler.HandleDeleteHotel)
+
 	app.Listen(*listenAdd)
 }
 

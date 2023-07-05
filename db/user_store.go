@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"errors"
 
 	"github.com/dayoneabu/hotel_reservation/types"
 	"go.mongodb.org/mongo-driver/bson"
@@ -19,7 +20,7 @@ type UserStore interface {
 	GetUserByID(context.Context, string) (*types.User, error)
 	GetAllUsers(context.Context) ([]*types.User, error)
 	CreateNewUser(context.Context, *types.User) (*types.User, error)
-	UpdateUser(ctx context.Context, id bson.M, user bson.M) (bool, error)
+	UpdateUser(ctx context.Context, id string, user *types.User) (bool, error)
 	DeleteUser(context.Context, string) error
 }
 
@@ -84,14 +85,21 @@ func (s *MongoUserStore) DeleteUser(ctx context.Context, id string) error {
 	return nil
 }
 
-func (s *MongoUserStore) UpdateUser(ctx context.Context, id bson.M, user bson.M) (bool, error) {
+func (s *MongoUserStore) UpdateUser(ctx context.Context, id string, user *types.User) (bool, error) {
 	opts := options.Update().SetUpsert(false)
-	updatedUser, err := s.coll.UpdateOne(ctx, id, user, opts)
+
+	oid, oidErr := primitive.ObjectIDFromHex(id)
+	if oidErr != nil {
+		return false, oidErr
+	}
+	filter := bson.M{"_id": oid}
+	update := bson.M{"$set": user}
+	updatedUser, err := s.coll.UpdateOne(ctx, filter, update, opts)
 	if err != nil {
 		return false, err
 	}
 	if updatedUser.ModifiedCount != 0 {
 		return true, nil
 	}
-	return false, err
+	return false, errors.New("something went south please try again")
 }

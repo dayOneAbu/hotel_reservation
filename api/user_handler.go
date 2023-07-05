@@ -6,16 +6,14 @@ import (
 	"github.com/dayoneabu/hotel_reservation/db"
 	"github.com/dayoneabu/hotel_reservation/types"
 	"github.com/gofiber/fiber/v2"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
+
+var params types.CreateUserParams
 
 type UserHandler struct {
 	userStore db.UserStore
 }
-
-var params types.CreateUserParams
 
 func NewUserHandler(userStore db.UserStore) *UserHandler {
 	return &UserHandler{
@@ -59,18 +57,11 @@ func (h *UserHandler) HandelPostUser(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) HandlePutUser(c *fiber.Ctx) error {
-	var update bson.M
-	if err := c.BodyParser(&update); err != nil {
+	var user types.User
+	if err := c.BodyParser(&user); err != nil {
 		return err
 	}
-	oid, oidErr := primitive.ObjectIDFromHex(c.Params("id"))
-	if oidErr != nil {
-		return oidErr
-	}
-	filter := bson.M{"_id": oid}
-	update = bson.M{"$set": update}
-
-	isUserUpdated, err := h.userStore.UpdateUser(c.Context(), filter, update)
+	isUserUpdated, err := h.userStore.UpdateUser(c.Context(), c.Params("id"), &user)
 	if err != nil {
 		return err
 	}

@@ -10,11 +10,19 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func ConnectTOMongo() *mongo.Client {
+func LoadEnv(name string) string {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found")
 	}
-	uri := os.Getenv("MONGODB_URI")
+	envVarName := os.Getenv(name)
+
+	return envVarName
+}
+func ConnectTOMongo() *mongo.Client {
+	// if err := godotenv.Load(); err != nil {
+	// 	log.Println("No .env file found")
+	// }
+	uri := LoadEnv("MONGODB_URI")
 	if uri == "" {
 		log.Fatal("You must set your 'MONGODB_URI' environmental variable.")
 	}
