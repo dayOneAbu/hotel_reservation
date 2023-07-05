@@ -2,6 +2,8 @@ package db
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/dayoneabu/hotel_reservation/types"
 	"go.mongodb.org/mongo-driver/bson"
@@ -16,9 +18,9 @@ const (
 type RoomStore interface {
 	GetRoom(ctx context.Context, roomId string) (*types.Room, error)
 	GetHotelRooms(ctx context.Context, hotelID string) ([]*types.Room, error)
-	CreateRoom(context.Context, types.Room) (*types.Room, error)
+	CreateRoom(ctx context.Context, hotelId string, room *types.Room) (*types.Room, error)
 	UpdateRoom(ctx context.Context, roomId string, room *types.Room) error
-	DeleteRoom(context.Context, types.Room) error
+	DeleteRoom(ctx context.Context, roomId string) error
 }
 
 type MongoRoomStore struct {
@@ -65,25 +67,55 @@ func (s *MongoRoomStore) CreateRoom(ctx context.Context, hotelId string, room *t
 	return room, nil
 }
 
-// func (s *MongoRoomStore) GetHotelRooms(ctx context.Context, hotelID string) ([]*types.Room, error) {
-// 	var rooms []*types.Room
-// 	oid, err := primitive.ObjectIDFromHex(hotelID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	filter := bson.M{"hotelId": oid}
-// 	cur, err := s.Coll.Find(ctx, filter)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	if err := cur.All(ctx, &rooms); err != nil {
-// 		return nil, err
-// 	}
+func (s *MongoRoomStore) GetHotelRooms(ctx context.Context, hotelID string) ([]*types.Room, error) {
+	var rooms []*types.Room
+	oid, err := primitive.ObjectIDFromHex(hotelID)
+	if err != nil {
+		return nil, err
+	}
+	filter := bson.M{"hotelId": oid}
+	cur, err := s.Coll.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	if err := cur.All(ctx, &rooms); err != nil {
+		return nil, err
+	}
 
-//		return rooms, nil
-//	}
-//
+	return rooms, nil
+}
+func (s *MongoRoomStore) UpdateRoom(ctx context.Context, roomId string, room *types.Room) error {
 
+	oid, err := primitive.ObjectIDFromHex(roomId)
+	if err != nil {
+		return err
+	}
+	filter := bson.M{"_id": oid}
+	// s.Coll.UpdateOne()
+	if err := s.Coll.FindOneAndUpdate(ctx, filter, room).Decode(&room); err != nil {
+		return err
+	}
+	fmt.Println(room)
+	return nil
+
+}
+func (s *MongoRoomStore) DeleteRoom(ctx context.Context, roomId string) error {
+	oid, err := primitive.ObjectIDFromHex(roomId)
+	if err != nil {
+		return err
+	}
+	deletedRoom, err := s.Coll.DeleteOne(ctx, bson.M{"_id": oid})
+	if err != nil {
+		return nil
+	}
+	if deletedRoom.DeletedCount != 0 {
+		return nil
+	}
+	return errors.New("something went wrong please try again")
+
+}
+
+// TODO: populating data from object id
 /*
 // Sort by name in ascending order
 	aggSort := bson.M{"$sort": bson.M{"roomNo": 1}}

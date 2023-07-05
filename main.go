@@ -22,8 +22,17 @@ func main() {
 	app := fiber.New(config)
 	apiV1 := app.Group("/api/v1")
 
-	userHandler := api.NewUserHandler(db.NewMongoUserStore(client))
-	hotelHandler := api.NewHotelHandler(db.NewMongoHotelStore(client))
+	// handlers initialization
+	var (
+		hotelStore = db.NewMongoHotelStore(client)
+		roomStore  = db.NewMongoRoomStore(client, hotelStore)
+		userStore  = db.NewMongoUserStore(client)
+
+		hotelHandler = api.NewHotelHandler(hotelStore)
+		roomHandler  = api.NewRoomHandler(roomStore)
+		userHandler  = api.NewUserHandler(userStore)
+	)
+
 	app.Get("/", handleHome)
 	// userHandlers
 	apiV1.Get("/users", userHandler.HandelGetUsers)
@@ -32,12 +41,17 @@ func main() {
 	apiV1.Put("/users/:id", userHandler.HandlePutUser)
 	apiV1.Delete("/users/:id", userHandler.HandleDeleteUser)
 	// hotelHandlers
-	apiV1.Get("/hotel", hotelHandler.HandelGetAllHotel)
-	apiV1.Get("/hotel/:id", hotelHandler.HandleGetHotelByID)
-	apiV1.Post("/hotel", hotelHandler.HandelPostHotel)
-	apiV1.Put("/hotel/:id", hotelHandler.HandleUpdateHotel)
-	apiV1.Delete("/hotel/:hotelId/:roomId", hotelHandler.HandleDeleteHotel)
-
+	apiV1.Get("/hotels", hotelHandler.HandelGetAllHotel)
+	apiV1.Get("/hotels/:id", hotelHandler.HandleGetHotelByID)
+	apiV1.Post("/hotels", hotelHandler.HandelPostHotel)
+	apiV1.Put("/hotels/:id", hotelHandler.HandlePutHotel)
+	apiV1.Delete("/hotels/:hotelId/:roomId", hotelHandler.HandleDeleteHotel)
+	// hotelHandlers
+	apiV1.Get("/rooms", roomHandler.HandleGetRoom)
+	apiV1.Get("/rooms/:hotel_id", roomHandler.HandleGetHotelRooms)
+	apiV1.Post("/rooms", roomHandler.HandlePostRoom)
+	apiV1.Put("/rooms/:room_id", roomHandler.HandlePutRoom)
+	apiV1.Delete("/rooms/:room_id", roomHandler.HandleDeleteRoom)
 	app.Listen(*listenAdd)
 }
 

@@ -45,7 +45,7 @@ func (h *HotelHandler) HandelPostHotel(c *fiber.Ctx) error {
 	}
 	return c.JSON(hotel)
 }
-func (h *HotelHandler) HandleUpdateHotel(c *fiber.Ctx) error {
+func (h *HotelHandler) HandlePutHotel(c *fiber.Ctx) error {
 	if err := c.BodyParser(&hotel); err != nil {
 		return err
 	}
